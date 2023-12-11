@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/WikipediaEdits.iml" filepath="$PROJECT_DIR$/.idea/WikipediaEdits.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/wiked.iml" filepath="$PROJECT_DIR$/.idea/wiked.iml" />
     </modules>
   </component>
 </project>
