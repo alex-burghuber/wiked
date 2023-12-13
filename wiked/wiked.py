@@ -1,48 +1,11 @@
 #!/usr/bin/env python
 
-import os
-import matplotlib.pyplot as plt
 import requests
-import json
-import numpy as np
-from PIL import Image
-from os import path
-from wordcloud import WordCloud
 
+import caching
+import word_clouds
 
-def make_word_cloud(text):
-    wordcloud = WordCloud().generate(text)
-
-    plt.imshow(wordcloud, interpolation='bilinear')
-    plt.axis("off")
-
-    wordcloud = WordCloud(max_font_size=40, min_font_size=15).generate(text)
-    plt.figure()
-    plt.imshow(wordcloud, interpolation="bilinear")
-    plt.axis("off")
-    plt.show()
-
-
-def make_jku_logo_masked_world_cloud(text):
-    print("Generating word cloud...")
-
-    d = path.dirname(__file__) if "__file__" in locals() else os.getcwd()
-
-    jku_mask = np.array(Image.open(path.join(d, "jku_mask.png")))
-
-    wc = WordCloud(background_color="black", max_words=2000, mask=jku_mask, contour_width=3, contour_color='black',
-                   collocations=False, regexp=r"\w+(?:[-:]+(?:\w+)?)*")
-
-    wc.generate(text)
-
-    wc.to_file(path.join(d, "jku_cloud.png"))
-
-    print("Done")
-
-    plt.figure()
-    plt.imshow(wc, interpolation='bilinear')
-    plt.axis("off")
-    plt.show()
+JKU_IP_RANGE = "140.78.0.0/16"
 
 
 def get_all_contributions_of_ip_range(iprange: str) -> list:
@@ -98,39 +61,55 @@ def query_contributions(given_params: {}, language_code: str) -> list:
     return contributions
 
 
-def cache_contributions(contributions: list):
-    with open("contributions.json", "w") as outfile:
-        json.dump(contributions, outfile, indent=2)
+def command_loop(ip_range: str, contributions: list, is_jku: bool):
+    while True:
+        print("\n")
+        print("Enter a command (wc, exit)")
 
+        command = input().lower()
+        if command == "wc":
+            titles = [contribution["title"].replace(" ", "_") for contribution in contributions]
+            text = " ".join(titles)
 
-JKU_IP_RANGE = "140.78.0.0/16"
+            if is_jku:
+                word_clouds.make_jku_logo_masked_world_cloud(text)
+            else:
+                name = ip_range.replace("/", "_") + ".png"
+                word_clouds.make_word_cloud(text, name)
+        elif command == "exit":
+            break
+        else:
+            print("Unknown command")
 
 
 def main():
     print(
-        "Wiked (Wikipedia Edits) will create a word cloud of the wikipedia site titles of all contributions that were "
-        "made with an ip address belonging to the JKU campus network.\nEnter any key to use locally cached values "
-        "or enter 'r' to refresh from the web.")
-    key = input()
+        "Wiked (Wikipedia Edits) provides multiple options to visualise and analyze wikipedia contributions of an ip range.\n"
+        "You can enter 'JKU' to access the JKU IP range (" + JKU_IP_RANGE + ") or enter any other ipv4 range manually."
+    )
 
-    if key.lower() == 'r':
-        contributions = get_all_contributions_of_ip_range(JKU_IP_RANGE)
-        cache_contributions(contributions)
+    user_input = input()
+
+    use_jku = user_input.lower() == 'jku'
+    ip_range = JKU_IP_RANGE if use_jku else user_input
+
+    print("Refresh from web? (otherwise uses cached values) (y/n)")
+    refresh = input().lower() == 'y'
+
+    if refresh:
+        contributions = get_all_contributions_of_ip_range(ip_range)
+        caching.save_contributions(contributions, ip_range)
     else:
-        try:
-            file = open("contributions.json", "r")
-            contributions = json.loads(file.read())
-            file.close()
-        except FileNotFoundError:
+        result = caching.load_contributions(ip_range)
+        if result is not None:
+            contributions = result
+        else:
             print("No cached contributions found, loading new ones")
-            contributions = get_all_contributions_of_ip_range(JKU_IP_RANGE)
-            cache_contributions(contributions)
+            contributions = get_all_contributions_of_ip_range(ip_range)
+            caching.save_contributions(contributions, ip_range)
 
     print("Found %s contributions" % len(contributions))
-
-    titles = [contribution["title"].replace(" ", "_") for contribution in contributions]
-    text = " ".join(titles)
-    make_jku_logo_masked_world_cloud(text)
+    command_loop(ip_range, contributions, use_jku)
 
 
 if __name__ == '__main__':
