@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-from os import path
 
+import os
 import matplotlib.pyplot as plt
 import requests
 import json
 import numpy as np
 from PIL import Image
-import os
-
+from os import path
 from wordcloud import WordCloud
 
 
@@ -17,7 +16,6 @@ def make_word_cloud(text):
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis("off")
 
-    # lower max_font_size
     wordcloud = WordCloud(max_font_size=40, min_font_size=15).generate(text)
     plt.figure()
     plt.imshow(wordcloud, interpolation="bilinear")
@@ -25,32 +23,26 @@ def make_word_cloud(text):
     plt.show()
 
 
-def make_word_cloud2(text):
+def make_jku_logo_masked_world_cloud(text):
     print("Generating word cloud...")
 
     d = path.dirname(__file__) if "__file__" in locals() else os.getcwd()
 
-    # read the mask image
-    # taken from
-    # http://www.stencilry.org/stencils/movies/alice%20in%20wonderland/255fk.jpg
     jku_mask = np.array(Image.open(path.join(d, "jku_mask.png")))
 
     wc = WordCloud(background_color="black", max_words=2000, mask=jku_mask, contour_width=3, contour_color='black',
                    collocations=False, regexp=r"\w+(?:[-:]+(?:\w+)?)*")
 
-    # generate word cloud
     wc.generate(text)
 
-    # store to file
     wc.to_file(path.join(d, "jku_cloud.png"))
 
-    # show
+    print("Done")
+
     plt.figure()
     plt.imshow(wc, interpolation='bilinear')
     plt.axis("off")
     plt.show()
-
-    # plt.imshow(jku_mask, cmap=plt.cm.gray, interpolation='bilinear')
 
 
 def get_all_contributions_of_ip_range(iprange: str) -> list:
@@ -64,17 +56,18 @@ def get_all_contributions_of_ip_range(iprange: str) -> list:
         "formatversion": 2,
         "ucnamespace": "*"
     }
-    all_contributions = query_contributions(params, language_code="de")
-    print("Loaded %s de.wikipedia.org contributions" % len(all_contributions))
 
-    all_contributions.extend(query_contributions(params, language_code="en"))
-    print("Loaded %s en.wikipedia.org and de.wikipedia.org contributions" % len(all_contributions))
+    de_contributions = query_contributions(params, "de")
+    en_contributions = query_contributions(params, "en")
+
+    all_contributions = de_contributions + en_contributions
+    print("Loaded total of %s contributions" % len(all_contributions))
 
     return all_contributions
 
 
 def query_contributions(given_params: {}, language_code: str) -> list:
-    all_contributions = []
+    contributions = []
     last_continue = {}
 
     while True:
@@ -94,13 +87,15 @@ def query_contributions(given_params: {}, language_code: str) -> list:
         if 'warnings' in result_data:
             print(result_data['warnings'])
         if 'query' in result_data:
-            all_contributions.extend(result_data["query"]["usercontribs"])
+            contributions.extend(result_data["query"]["usercontribs"])
         if 'continue' not in result_data:
             break
 
         last_continue = result_data['continue']
 
-    return all_contributions
+    print("Loaded %s %s.wikipedia.org contributions" % (len(contributions), language_code))
+
+    return contributions
 
 
 def cache_contributions(contributions: list):
@@ -112,11 +107,13 @@ JKU_IP_RANGE = "140.78.0.0/16"
 
 
 def main():
-    print("The following program will create a word cloud of the wikipedia site titles of all contributions that were "
-          "made with an ip address on the JKU campus. Enter any key to use cached contributions or enter 'r' to refresh")
+    print(
+        "Wiked (Wikipedia Edits) will create a word cloud of the wikipedia site titles of all contributions that were "
+        "made with an ip address belonging to the JKU campus network.\nEnter any key to use locally cached values "
+        "or enter 'r' to refresh from the web.")
     key = input()
 
-    if key == 'r':
+    if key.lower() == 'r':
         contributions = get_all_contributions_of_ip_range(JKU_IP_RANGE)
         cache_contributions(contributions)
     else:
@@ -133,7 +130,7 @@ def main():
 
     titles = [contribution["title"].replace(" ", "_") for contribution in contributions]
     text = " ".join(titles)
-    make_word_cloud2(text)
+    make_jku_logo_masked_world_cloud(text)
 
 
 if __name__ == '__main__':
