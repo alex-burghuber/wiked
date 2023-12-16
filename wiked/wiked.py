@@ -6,6 +6,7 @@ import random
 import caching
 import word_clouds
 import charts
+import jku_cs_profs_scraper
 
 JKU_IP_RANGE = "140.78.0.0/16"
 
@@ -67,7 +68,7 @@ def command_loop(ip_range: str, contributions: list, is_jku: bool):
     while True:
         print("\n%s wikipedia contributions available for %s" % (
             len(contributions), "the JKU campus network" if is_jku else ip_range))
-        print("Enter a command (wc, timestamp, nightowls, bar, exit)")
+        print("Enter a command (wc, timestamp, nightowls, bar, " + ("profs, " if is_jku else "") + "exit)")
 
         command = input().strip().lower()
         if command == "wc":
@@ -100,6 +101,25 @@ def command_loop(ip_range: str, contributions: list, is_jku: bool):
         elif command == "bar":
             name = "bar" + ip_range.replace("/", "_") + ".png"
             charts.create_contributions_year_bar_chart(contributions, name)
+        elif command == "profs" and is_jku:
+            print("Show all contributions that contain a JKU CS professor name")
+
+            prof_names = caching.load_professors()
+            if prof_names is None:
+                prof_names = jku_cs_profs_scraper.scrape_jku_cs_profs()
+                caching.save_professors(prof_names)
+                print("Cached JKU CS professors")
+
+            prof_contributions = []
+            for contribution in contributions:
+                for prof_name in prof_names:
+                    if prof_name in contribution["title"]:
+                        prof_contributions.append(contribution)
+                        break
+            print("Found %s contributions that contain a JKU CS professor name" % len(prof_contributions))
+            for contribution in prof_contributions:
+                print("Edited %s at %s" % (contribution["title"], contribution["timestamp"]))
+
         elif command == "exit":
             break
         else:
