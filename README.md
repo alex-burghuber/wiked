@@ -27,7 +27,7 @@ python .\wiked.py
 
 The startup sequence will ask for an ip range and if cached contributions should be used. When starting for the first time, the contributions will always be loaded from the web. After that, a *command loop* will start where you can enter different commands to analyze the loaded contributions.
 
-### Example: A generated JKU campus network Wikipedia contributions world cloud
+### A generated JKU campus network Wikipedia contributions world cloud
 <img src="example_jku_cloud.png" width="750">
 
 # ~~Wiked~~ Wicked
