@@ -2,12 +2,11 @@ Hello There,
 
 **Wiked** (Wikipedia Edits) is a tool to analyze Wikipedia contributions made on an ip address within a specified ip range.
 
-It works for any entered IPv4 Range within a CIDR limit of /16. 
+It works for any entered IPv4 Range within a CIDR limit of /16.
 For example, 140.78.0.0/16 works but 140.78.0.0/15 doesn't.
 This is a limitation of Wikipedia's API.
 
 This tool is primarily made for the Johannes Kepler University's campus network and its IPv4 range is predefined which can be chosen during the tool's startup. 
-
 The JKU IPv4 range is from: https://myip.ms/view/web_hosting/348431/University_Linz.html.
 Each device connected to the JKU's eduroam internet provider system receives one of these ip addresses. (tested)
 
