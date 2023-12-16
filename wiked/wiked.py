@@ -5,6 +5,7 @@ import random
 
 import caching
 import word_clouds
+import charts
 
 JKU_IP_RANGE = "140.78.0.0/16"
 
@@ -40,7 +41,7 @@ def query_contributions(given_params: {}, language_code: str) -> list:
         if last_continue:
             params['uccontinue'] = last_continue['uccontinue']
 
-        print("Loading next contributions page with params: %s" % params)
+        print("Loading next contributions page")
         result = requests.get(url='https://%s.wikipedia.org/w/api.php' % language_code, params=params)
         print("Received result from %s" % result.url)
 
@@ -64,8 +65,9 @@ def query_contributions(given_params: {}, language_code: str) -> list:
 
 def command_loop(ip_range: str, contributions: list, is_jku: bool):
     while True:
-        print("\n")
-        print("Enter a command (wc, timestamp, nightowls, exit)")
+        print("\n%s wikipedia contributions available for %s" % (
+            len(contributions), "the JKU campus network" if is_jku else ip_range))
+        print("Enter a command (wc, timestamp, nightowls, bar, exit)")
 
         command = input().strip().lower()
         if command == "wc":
@@ -75,7 +77,7 @@ def command_loop(ip_range: str, contributions: list, is_jku: bool):
             if is_jku:
                 word_clouds.make_jku_logo_masked_world_cloud(text)
             else:
-                name = ip_range.replace("/", "_") + ".png"
+                name = "wc" + ip_range.replace("/", "_") + ".png"
                 word_clouds.make_word_cloud(text, name)
 
         elif command == "count":
@@ -90,10 +92,14 @@ def command_loop(ip_range: str, contributions: list, is_jku: bool):
                 print("%s at %s" % (c["title"], c["timestamp"]))
         elif command == "nightowls":
             print("25 random night owls:")
-            night_owls = [c for c in contributions if 22 <= int(c["timestamp"][11:13]) or int(c["timestamp"][11:13]) < 6]
+            night_owls = [c for c in contributions if
+                          22 <= int(c["timestamp"][11:13]) or int(c["timestamp"][11:13]) < 6]
             random.shuffle(night_owls)
             for owl in night_owls[:25]:
                 print("Edited %s at %s" % (owl["title"], owl["timestamp"]))
+        elif command == "bar":
+            name = "bar" + ip_range.replace("/", "_") + ".png"
+            charts.create_contributions_year_bar_chart(contributions, name)
         elif command == "exit":
             break
         else:
@@ -102,8 +108,8 @@ def command_loop(ip_range: str, contributions: list, is_jku: bool):
 
 def main():
     print(
-        "Wiked (Wikipedia Edits) provides multiple options to visualise and analyze wikipedia contributions of an ip range.\n"
-        "You can enter 'JKU' to access the JKU IP range (" + JKU_IP_RANGE + ") or enter any other ipv4 range manually."
+        "\nWiked (Wikipedia Edits) is a tool that provides multiple options to visualise and analyze wikipedia contributions of an ip range.\n"
+        "You can enter 'JKU' to use the JKU ip range (" + JKU_IP_RANGE + ") or enter any other ipv4 range manually."
     )
 
     user_input = input()
@@ -111,10 +117,11 @@ def main():
     use_jku = user_input.lower() == 'jku'
     ip_range = JKU_IP_RANGE if use_jku else user_input
 
-    print("Refresh from web? (otherwise uses cached values) (y/n)")
+    print("Refresh contributions from web? (otherwise cached values are used) (y/n)")
     refresh = input().lower() == 'y'
 
     if refresh:
+        print("Loading new contributions (this may take a while...)")
         contributions = get_all_contributions_of_ip_range(ip_range)
         caching.save_contributions(contributions, ip_range)
     else:
@@ -122,11 +129,10 @@ def main():
         if result is not None:
             contributions = result
         else:
-            print("No cached contributions found, loading new ones")
+            print("No cached contributions found, loading new ones (this may take a while...)")
             contributions = get_all_contributions_of_ip_range(ip_range)
             caching.save_contributions(contributions, ip_range)
 
-    print("Found %s contributions" % len(contributions))
     command_loop(ip_range, contributions, use_jku)
 
 
