@@ -1,6 +1,6 @@
 Hello There,
 
-**Wiked** (Wikipedia Edits) is a tool to analyze Wikipedia anonymous contributions made on an ip address within a specified ip range.
+**Wiked** (Wikipedia Edits) is a tool to analyze anonymous Wikipedia contributions made on an ip address within a specified ip range.
 
 It works for any entered IPv4 range within a CIDR limit of /16.
 For example, 140.78.0.0/16 works but 140.78.0.0/15 doesn't.
