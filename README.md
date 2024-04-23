@@ -28,6 +28,3 @@ The startup sequence will ask for an ip range and if cached contributions should
 
 ### A generated JKU campus network Wikipedia contributions world cloud
 <img src="example_jku_cloud.png" width="750">
-
-# ~~Wiked~~ Wicked
-<img src="wicked.png" width="500">
